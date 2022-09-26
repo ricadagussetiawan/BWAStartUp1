@@ -12,7 +12,7 @@ import (
 	"net/http"
 	"path/filepath"
 	"strings"
-	
+
 	webHandler "bwastartup/web/handler"
 
 	"github.com/dgrijalva/jwt-go"
@@ -26,12 +26,8 @@ import (
 	// "github.com/go-playground/validator/v10"
 )
 
-
-
-	
-
 func main() {
-	dsn := "admin:ArYf4E80@tcp(mysql-82378-0.cloudclusters.net:10009)/bwastartup?charset=utf8mb4&parseTime=True&loc=Local"
+	dsn := "admin:Qje5obRN@tcp(mysql-88986-0.cloudclusters.net:18215)/bwastartup?charset=utf8mb4&parseTime=True&loc=Local"
 	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
 
 	if err != nil {
@@ -58,7 +54,17 @@ func main() {
 	sessionWebHandler := webHandler.NewSessionHandler(userService)
 
 	router := gin.Default()
-	router.Use(cors.Default())
+	// router.Use(cors.Default())
+	router.Use(cors.New(cors.Config{
+		AllowOrigins:     []string{"*"},
+		AllowMethods:     []string{"*"},
+		AllowHeaders:     []string{"*"},
+		ExposeHeaders:    []string{"*"},
+		AllowCredentials: true,
+		AllowOriginFunc: func(origin string) bool {
+			return origin == "https://github.com"
+		},
+	}))
 
 	cookieStore := cookie.NewStore([]byte(auth.SECRET_KEY))
 	router.Use(sessions.Sessions("bwastartup", cookieStore))
@@ -70,7 +76,7 @@ func main() {
 	router.Static("/js", "./web/assets/js")
 	router.Static("/webfonts", "./web/assets/webfonts")
 
-	api := router.Group ("/api/v1")
+	api := router.Group("/api/v1")
 
 	api.POST("/users", userHandler.RegisterUser)
 	api.POST("/sessions", userHandler.Login)
@@ -114,11 +120,9 @@ func main() {
 	router.Run()
 }
 
-
-
 func authMiddleware(authService auth.Service, userService user.Service) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		
+
 		authHeader := c.GetHeader("Authorization")
 
 		if !strings.Contains(authHeader, "Bearer") {
